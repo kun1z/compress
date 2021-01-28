@@ -1,19 +1,14 @@
-//----------------------------------------------------------------------------------------------------------------------
-// Copyright © 2021 by Brett Kuntz. All rights reserved.
-//----------------------------------------------------------------------------------------------------------------------
 #include "compress.h"
-#define SAMPLES_PER_TEST 8000
-static u64 * global_total;
-static sem_t csoutput;
-static const u64 BLAKE_IV = UINT64_C(0xA54FF53A5F1D36F1);
+#define CUTS_LENGTH 8
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, -1 };
 //----------------------------------------------------------------------------------------------------------------------
-//#include <windows.h>
+#include <windows.h>
 si main(si argc, s8 ** argv)
 {
-    /*if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS))
+    if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS))
     {
         printf("Low priority set\n");
-    }*/
+    }
 
     if (sem_init(&csoutput, 1, 1) == -1)
     {
@@ -27,42 +22,31 @@ si main(si argc, s8 ** argv)
         return EXIT_FAILURE;
     }
 
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
-    // BRETT: DID YOU CONFIRM THE SUB-BLOCKS ARE CORRECT???
+    if (argc != 3) return EXIT_FAILURE;
 
-    if (argc != 2) return EXIT_FAILURE;
-    const ui CUTOFF = 7 + atoi(argv[1]);
-
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
-    // BRETT: How about the printf's?
+    const ui CUTOFF = atol(argv[1]);
+    const ul SAMPLES = atol(argv[2]);
 
     // Start
     printf("Starting\n");
 
     const ui threads = get_nprocs();
 
-    printf("CUTOFF: %u\n", CUTOFF);
-    printf("SAMPLES_PER_TEST: %lu\n", (ul)SAMPLES_PER_TEST);
+    SAMPLES_PER_TEST = round((r64)SAMPLES / threads);
+
+    printf("CUTOFF we're testing: %u\n", CUTOFF);
+    printf("SAMPLES: %lu\n", SAMPLES);
     printf("threads: %u\n", threads);
+    printf("SAMPLES per thread: %lu\n", (ul)SAMPLES_PER_TEST);
     fflush(0);
+
+    CHAIN_CUTS[CUTS_LENGTH - 1] = CUTOFF;
 
     for (ui t=0;t<threads;t++)
     {
         if (!fork())
         {
-            check(37, 23, 17, 14, 11, 9, CUTOFF);
+            check();
 
             printf("Child Exiting\n");
             fflush(0);
@@ -73,20 +57,16 @@ si main(si argc, s8 ** argv)
 
     cwait;
 
-    // Change below
-    // Change below
-    // Change below
-    // Change below
-    // Change below
-    // Change below
-    // Change below
-    // Change below
-
     s8 buf[2048];
-    const u64 total_samples = SAMPLES_PER_TEST * threads;
-    const r64 avg_distance = (r64)*global_total / total_samples;
-    sprintf(buf, "Test Params: find_hash20, find_p_hash20.%u, find_p_hash20.%u, find_p_hash20.%u, find_p_hash20.%u, find_p_hash20.%u, find_p_hash20.%u, find_p_hash20.%u\n", 37, 23, 17, 14, 11, 9, CUTOFF);
-    sprintf(&buf[strlen(buf)], "n=%"PRIu64"\n", total_samples);
+    const r64 avg_distance = (r64)*global_total / SAMPLES;
+    sprintf(buf, "Test Params: ");
+    for (ui i=0;i<CUTS_LENGTH;i++)
+    {
+        sprintf(&buf[strlen(buf)], "%u, ", CHAIN_CUTS[i]);
+    }
+    buf[strlen(buf) - 2] = 0;
+    sprintf(&buf[strlen(buf)], "n=%lu\n", SAMPLES);
+    sprintf(&buf[strlen(buf)], "CUTS_LENGTH: %u\n", CUTS_LENGTH);
     sprintf(&buf[strlen(buf)], "Average Distance: %.4f\n\n", avg_distance);
     FILE * fout = fopen("output_results.txt", "ab");
     fputs(buf, fout);
@@ -97,7 +77,7 @@ si main(si argc, s8 ** argv)
     return EXIT_SUCCESS;
 }
 //----------------------------------------------------------------------------------------------------------------------
-void check(const u8 p2, const u8 p3, const u8 p4, const u8 p5, const u8 p6, const u8 p7, const u8 p8)
+static void check(void)
 {
     FILE * frand = fopen("/dev/urandom", "rb");
 
@@ -107,7 +87,6 @@ void check(const u8 p2, const u8 p3, const u8 p4, const u8 p5, const u8 p6, cons
 
     for (u64 i=0;i<SAMPLES_PER_TEST;i++)
     {
-        //if (i && !(i & 3))
         if (i)
         {
             const r64 m = (tick() - start) / 60000.;
@@ -127,47 +106,13 @@ void check(const u8 p2, const u8 p3, const u8 p4, const u8 p5, const u8 p6, cons
             u64 v[16], m[16];
             const u64 sub_block = i * 32;
 
-            find_hash(0, output_block, input_block, v, m, input_iv, sub_block + 0, 20);
+            find_hash(0, output_block, input_block, v, m, input_iv, sub_block, 20);
 
-                    memcpy(input_block, output_block, 128);
-
-            find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 1, p2, 20);
-
-                    memcpy(input_block, output_block, 128);
-
-            find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 2, p3, 20);
-
-                    memcpy(input_block, output_block, 128);
-
-            find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 3, p4, 20);
-
-                    memcpy(input_block, output_block, 128);
-
-            find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 4, p5, 20);
-
-                    memcpy(input_block, output_block, 128);
-
-            find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 5, p6, 20);
-
-                    memcpy(input_block, output_block, 128);
-
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-
-            find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 6, p7, 20);
-
-                    memcpy(input_block, output_block, 128);
-
-            find_p_hash(&distance, output_block, input_block, v, m, input_iv, sub_block + 7, p8, 20);
-
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
-                        // BE CAREFUL HERE
+            for (ui j=0;j<CUTS_LENGTH;j++)
+            {
+                memcpy(input_block, output_block, 128);
+                find_p_hash(&distance, output_block, input_block, v, m, input_iv, sub_block + 1 + j, CHAIN_CUTS[j], 20);
+            }
 
             total += distance;
         }
@@ -182,7 +127,7 @@ void check(const u8 p2, const u8 p3, const u8 p4, const u8 p5, const u8 p6, cons
     sem_post(&csoutput);
 }
 //----------------------------------------------------------------------------------------------------------------------
-u64 find_p_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const u8 cutoff, const ui limit)
+static u64 find_p_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const u8 cutoff, const ui limit)
 {
     u64 best_n = 0;
     ui best_distance = 0;
@@ -253,7 +198,7 @@ u64 find_p_hash(ui * const restrict distance, u8 * const restrict output_block, 
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-void p_hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const u8 cutoff, u8 const * const restrict input_block)
+static void p_hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const u8 cutoff, u8 const * const restrict input_block)
 {
     u8 const * const restrict vp = (u8 *)v;
 
@@ -287,7 +232,7 @@ void p_hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * c
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
-u64 find_hash2(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const r64 lbit_p, const r64 rbit_p, const ui limit)
+static u64 find_hash2(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const r64 lbit_p, const r64 rbit_p, const ui limit)
 {
     u64 best_n = 0;
     ui best_distance = 0;
@@ -358,7 +303,7 @@ u64 find_hash2(ui * const restrict distance, u8 * const restrict output_block, u
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-void hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const r64 lbit_p, const r64 rbit_p, u8 const * const restrict input_block)
+static void hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const r64 lbit_p, const r64 rbit_p, u8 const * const restrict input_block)
 {
     u8 const * const restrict vp = (u8 *)v;
 
@@ -400,7 +345,7 @@ void hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * co
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
-void shuffle(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const restrict v, u64 const * const restrict m, u8 const * const restrict input_block)
+static void shuffle(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const restrict v, u64 const * const restrict m, u8 const * const restrict input_block)
 {
     memcpy(v, RO_IV, 128);
 
@@ -422,7 +367,7 @@ void shuffle(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * 
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
-u64 find_shuffle(u32 * const restrict score, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui limit)
+static u64 find_shuffle(u32 * const restrict score, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui limit)
 {
     u64 RO_IV[16];
     memcpy(RO_IV, input_iv, 128);
@@ -497,7 +442,7 @@ u64 find_shuffle(u32 * const restrict score, u8 * const restrict output_block, u
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-u64 find_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui limit)
+static u64 find_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui limit)
 {
     u64 best_n = 0;
     ui best_distance = 0;
@@ -568,7 +513,7 @@ u64 find_hash(ui * const restrict distance, u8 * const restrict output_block, u8
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-void hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, u8 const * const restrict input_block)
+static void hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, u8 const * const restrict input_block)
 {
     u8 const * const restrict vp = (u8 *)v;
 
@@ -582,7 +527,7 @@ void hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * con
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
-si get_hash_score(void const * const block)
+static si get_hash_score(void const * const block)
 {
     u8 const * const restrict vp = (u8 *)block;
 
@@ -598,7 +543,7 @@ si get_hash_score(void const * const block)
     return 512 - population;
 }
 //----------------------------------------------------------------------------------------------------------------------
-s32 get_shuffle_score(void const * const restrict block)
+static s32 get_shuffle_score(void const * const restrict block)
 {
     s32 score = 0, mscore = 0;
 
@@ -618,7 +563,7 @@ s32 get_shuffle_score(void const * const restrict block)
     return score > mscore ? score : -mscore ;
 }
 //----------------------------------------------------------------------------------------------------------------------
-void blake2b(u64 * const restrict v, u64 const * const restrict m)
+static void blake2b(u64 * const restrict v, u64 const * const restrict m)
 {
     #define G(x, y, a, b, c, d)                 \
     do {                                        \
@@ -644,14 +589,14 @@ void blake2b(u64 * const restrict v, u64 const * const restrict m)
     #undef G
 }
 //----------------------------------------------------------------------------------------------------------------------
-u64 tick(void)
+static u64 tick(void)
 {
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     return ((u64)now.tv_sec * 1000) + ((u64)now.tv_nsec / 1000000);
 }
 //----------------------------------------------------------------------------------------------------------------------
-u16 rng(u64 * const restrict v, u64 const * const restrict m, const u16 n, ui * const restrict p)
+static u16 rng(u64 * const restrict v, u64 const * const restrict m, const u16 n, ui * const restrict p)
 {
     u16 mask = n - 1;
 
@@ -669,7 +614,7 @@ u16 rng(u64 * const restrict v, u64 const * const restrict m, const u16 n, ui * 
     return r;
 }
 //----------------------------------------------------------------------------------------------------------------------
-u16 rng_word(u64 * const v, u64 const * const restrict m, ui * const restrict p)
+static u16 rng_word(u64 * const v, u64 const * const restrict m, ui * const restrict p)
 {
     u8 const * const restrict vp = (u8 *)v;
 
@@ -684,18 +629,18 @@ u16 rng_word(u64 * const v, u64 const * const restrict m, ui * const restrict p)
     return temp;
 }
 //----------------------------------------------------------------------------------------------------------------------
-ui get_bit(void const * const restrict stream, const ui address)
+static ui get_bit(void const * const restrict stream, const ui address)
 {
     return (((u8 *)stream)[address / CHAR_BIT] >> ((CHAR_BIT - 1) - (address % CHAR_BIT))) & 1;
 }
 //----------------------------------------------------------------------------------------------------------------------
-void set_bit(void * const restrict stream, const ui address, const ui bit)
+static void set_bit(void * const restrict stream, const ui address, const ui bit)
 {
     if (bit) ((u8 *)stream)[address / CHAR_BIT] |= (1 << ((CHAR_BIT - 1) - (address % CHAR_BIT)));
     else ((u8 *)stream)[address / CHAR_BIT] &= ~(1 << ((CHAR_BIT - 1) - (address % CHAR_BIT)));
 }
 //----------------------------------------------------------------------------------------------------------------------
-void print_bytes(s8 const * const restrict label, void const * const p, const ui l)
+static void print_bytes(s8 const * const restrict label, void const * const p, const ui l)
 {
     printf("%s: ", label);
     for (ui i=0;i<l;i++)
@@ -706,7 +651,7 @@ void print_bytes(s8 const * const restrict label, void const * const p, const ui
     printf("\n");
 }
 //----------------------------------------------------------------------------------------------------------------------
-void print_population(s8 const * const restrict label, void const * const p)
+static void print_population(s8 const * const restrict label, void const * const p)
 {
     u8 const * const restrict s = (u8 *)p;
     ui pop = 0;
@@ -722,5 +667,45 @@ void print_population(s8 const * const restrict label, void const * const p)
 
     }
     printf("] %u %.2f%% %lu\n", pop, (pop * 100.) / 1024, labs(get_shuffle_score(p)));
+}
+//----------------------------------------------------------------------------------------------------------------------
+static void gen_test_file(s8 const * const restrict filename, const r64 p)
+{
+    u64 v[16], m[16];
+
+    FILE * frand = fopen("/dev/urandom", "rb");
+
+    fread(v, sizeof(u64), 16, frand);
+    fread(m, sizeof(u64), 16, frand);
+
+    fclose(frand);
+
+    const u16 cutoff = round(p * 65536);
+
+    FILE * f = fopen(filename, "wb");
+
+    for (u64 x=0;x<131072;x++)
+    {
+        u64 out = 0;
+
+        for (u64 i=1;i;i<<=1)
+        {
+            blake2b(v, m);
+            memcpy(m, v, 64);
+            blake2b(v, m);
+
+            u16 n;
+            memcpy(&n, v, sizeof(u16));
+
+            if (n < cutoff)
+            {
+                out |= i;
+            }
+        }
+
+        fwrite(&out, sizeof(u64), 1, f);
+    }
+
+    fclose(f);
 }
 //----------------------------------------------------------------------------------------------------------------------

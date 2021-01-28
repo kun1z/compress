@@ -1,6 +1,4 @@
-//----------------------------------------------------------------------------------------------------------------------
-// Copyright © 2021 by Brett Kuntz. All rights reserved.
-//----------------------------------------------------------------------------------------------------------------------
+//--NOV-26-2018---------------------------------------------------------------------------------------------------------
 #include <assert.h>
 #include <limits.h>
 static_assert(CHAR_BIT == 8, "This code requires [char] to be exactly 8 bits.");
@@ -20,14 +18,14 @@ typedef   float                r32    ;   typedef   double       r64    ;
 #define halt do { fflush(0); while (1) sleep(-1); } while (0)
 #define cwait do { fflush(0); sleep(1); do errno = 0, wait(0); while (errno != ECHILD); sleep(1); } while(0)
 //----------------------------------------------------------------------------------------------------------------------
-// 1st cut is 128   (p0.50)
 // 2nd cut is 37    (p0.14453125)
 // 3rd cut is 23    (p0.08984375)
 // 4th cut is 17    (p0.06640625)
 // 5th cut is 14    (p0.05468750)
 // 6th cut is 11    (p0.04296875)
 // 7th cut is 9     (p0.03515625)
-// 8th cut is ?? 8 ??
+// 8th cut is 8     (p0.03125000)
+// 9th cut is ???
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,23 +41,28 @@ typedef   float                r32    ;   typedef   double       r64    ;
 #include <sys/wait.h>
 #include <sys/mman.h>
 //----------------------------------------------------------------------------------------------------------------------
-void check(const u8, const u8, const u8, const u8, const u8, const u8, const u8);
-u64 find_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
-u64 find_hash2(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const r64, const r64, const ui);
-u64 find_p_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const u8, const ui);
-u64 find_shuffle(u32 * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
-void hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, u8 const * const restrict);
-void hash2(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const r64, const r64, u8 const * const restrict);
-void p_hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const u8, u8 const * const restrict);
-void shuffle(u8 * const restrict, u64 const * const restrict, u64 * const restrict, u64 const * const restrict, u8 const * const restrict);
-si get_hash_score(void const * const);
-void blake2b(u64 * const restrict, u64 const * const restrict);
-u64 tick(void);
-void set_bit(void * const restrict, const ui, const ui);
-ui get_bit(void const * const restrict, const ui);
-u16 rng_word(u64 * const, u64 const * const restrict, ui * const restrict);
-u16 rng(u64 * const restrict, u64 const * const restrict, const u16, ui * const restrict);
-s32 get_shuffle_score(void const * const restrict);
-void print_bytes(s8 const * const restrict, void const * const, const ui);
-void print_population(s8 const * const restrict, void const * const);
+static u64 * global_total, SAMPLES_PER_TEST;
+static sem_t csoutput;
+static const u64 BLAKE_IV = UINT64_C(0xA54FF53A5F1D36F1);
+//----------------------------------------------------------------------------------------------------------------------
+static void check(void);
+static u64 find_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
+static u64 find_hash2(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const r64, const r64, const ui);
+static u64 find_p_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const u8, const ui);
+static u64 find_shuffle(u32 * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
+static void hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, u8 const * const restrict);
+static void hash2(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const r64, const r64, u8 const * const restrict);
+static void p_hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const u8, u8 const * const restrict);
+static void shuffle(u8 * const restrict, u64 const * const restrict, u64 * const restrict, u64 const * const restrict, u8 const * const restrict);
+static si get_hash_score(void const * const);
+static void blake2b(u64 * const restrict, u64 const * const restrict);
+static u64 tick(void);
+static void set_bit(void * const restrict, const ui, const ui);
+static ui get_bit(void const * const restrict, const ui);
+static u16 rng_word(u64 * const, u64 const * const restrict, ui * const restrict);
+static u16 rng(u64 * const restrict, u64 const * const restrict, const u16, ui * const restrict);
+static s32 get_shuffle_score(void const * const restrict);
+static void print_bytes(s8 const * const restrict, void const * const, const ui);
+static void print_population(s8 const * const restrict, void const * const);
+static void gen_test_file(s8 const * const restrict, const r64);
 //----------------------------------------------------------------------------------------------------------------------
