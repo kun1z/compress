@@ -55,7 +55,7 @@ si main(si argc, s8 ** argv)
         }
     }
 
-    cwait;
+    cwait; // Wait on all children to exit
 
     s8 buf[2048];
     const r64 avg_distance = (r64)*global_total / SAMPLES;
@@ -65,7 +65,7 @@ si main(si argc, s8 ** argv)
         sprintf(&buf[strlen(buf)], "%u, ", CHAIN_CUTS[i]);
     }
     buf[strlen(buf) - 2] = 0;
-    sprintf(&buf[strlen(buf)], "n=%lu\n", SAMPLES);
+    sprintf(&buf[strlen(buf)], "\nn=%lu\n", SAMPLES);
     sprintf(&buf[strlen(buf)], "CUTS_LENGTH: %u\n", CUTS_LENGTH);
     sprintf(&buf[strlen(buf)], "Average Distance: %.4f\n\n", avg_distance);
     FILE * fout = fopen("output_results.txt", "ab");
