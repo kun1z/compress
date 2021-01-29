@@ -66,7 +66,6 @@ si main(si argc, s8 ** argv)
     }
     buf[strlen(buf) - 2] = 0;
     sprintf(&buf[strlen(buf)], "\nn=%lu\n", SAMPLES);
-    sprintf(&buf[strlen(buf)], "CUTS_LENGTH: %u\n", CUTS_LENGTH);
     sprintf(&buf[strlen(buf)], "Average Distance: %.4f\n\n", avg_distance);
     FILE * fout = fopen("output_results.txt", "ab");
     fputs(buf, fout);
@@ -87,7 +86,7 @@ static void check(void)
 
     for (u64 i=0;i<SAMPLES_PER_TEST;i++)
     {
-        if (i)
+        if (i & 1)
         {
             const r64 m = (tick() - start) / 60000.;
             const r64 pm = i / m;
