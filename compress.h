@@ -20,14 +20,15 @@ typedef   float                r32    ;   typedef   double       r64    ;
 #define halt do { fflush(0); while (1) sleep(-1); } while (0)
 #define cwait do { fflush(0); sleep(1); do errno = 0, wait(0); while (errno != ECHILD); sleep(1); } while(0)
 //----------------------------------------------------------------------------------------------------------------------
-// 2nd cut is 37    (p0.14453125)
-// 3rd cut is 23    (p0.08984375)
-// 4th cut is 17    (p0.06640625)
-// 5th cut is 14    (p0.05468750)
-// 6th cut is 11    (p0.04296875)
-// 7th cut is 9     (p0.03515625)
-// 8th cut is 8     (p0.03125000)
-// 9th cut is ???
+//  2nd cut is 37    (p0.14453125)
+//  3rd cut is 23    (p0.08984375)
+//  4th cut is 17    (p0.06640625)
+//  5th cut is 14    (p0.05468750)
+//  6th cut is 11    (p0.04296875)
+//  7th cut is 9     (p0.03515625)
+//  8th cut is 8     (p0.03125000)
+//  9th cut is 7     (p0.02734375)
+// 10th cut is ???
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

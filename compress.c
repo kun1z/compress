@@ -2,17 +2,11 @@
 // Copyright © 2021 by Brett Kuntz. All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
 #include "compress.h"
-#define CUTS_LENGTH 8
-static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, -1 };
+#define CUTS_LENGTH 9
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, -1 };
 //----------------------------------------------------------------------------------------------------------------------
-#include <windows.h>
 si main(si argc, s8 ** argv)
 {
-    if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS))
-    {
-        printf("Low priority set\n");
-    }
-
     if (sem_init(&csoutput, 1, 1) == -1)
     {
         printf("sem_init error\n");
