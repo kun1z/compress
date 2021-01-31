@@ -2,11 +2,17 @@
 // Copyright © 2021 by Brett Kuntz. All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
 #include "compress.h"
-#define CUTS_LENGTH 9
-static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, -1 };
+#define CUTS_LENGTH 10
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, 6, -1 };
 //----------------------------------------------------------------------------------------------------------------------
+//#include <windows.h>
 si main(si argc, s8 ** argv)
 {
+    /*if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS))
+    {
+        printf("Low priority set\n");
+    }*/
+
     if (sem_init(&csoutput, 1, 1) == -1)
     {
         printf("sem_init error\n");
@@ -54,19 +60,22 @@ si main(si argc, s8 ** argv)
 
     cwait; // Wait on all children to exit
 
-    s8 buf[2048];
-    const r64 avg_distance = (r64)*global_total / SAMPLES;
-    sprintf(buf, "Test Params: ");
-    for (ui i=0;i<CUTS_LENGTH;i++)
+    if (*global_total != 0) // fixes rare fork() emulation bug
     {
-        sprintf(&buf[strlen(buf)], "%u, ", CHAIN_CUTS[i]);
+        s8 buf[2048];
+        const r64 avg_distance = (r64)*global_total / SAMPLES;
+        sprintf(buf, "Test Params: ");
+        for (ui i=0;i<CUTS_LENGTH;i++)
+        {
+            sprintf(&buf[strlen(buf)], "%u, ", CHAIN_CUTS[i]);
+        }
+        buf[strlen(buf) - 2] = 0;
+        sprintf(&buf[strlen(buf)], "\nn=%lu\n", SAMPLES);
+        sprintf(&buf[strlen(buf)], "Average Distance: %.4f\n\n", avg_distance);
+        FILE * fout = fopen("output_results.txt", "ab");
+        fputs(buf, fout);
+        fclose(fout);
     }
-    buf[strlen(buf) - 2] = 0;
-    sprintf(&buf[strlen(buf)], "\nn=%lu\n", SAMPLES);
-    sprintf(&buf[strlen(buf)], "Average Distance: %.4f\n\n", avg_distance);
-    FILE * fout = fopen("output_results.txt", "ab");
-    fputs(buf, fout);
-    fclose(fout);
 
     printf("Parent Exiting\n");
 
@@ -196,29 +205,26 @@ static u64 find_p_hash(ui * const restrict distance, u8 * const restrict output_
 //----------------------------------------------------------------------------------------------------------------------
 static void p_hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const u8 cutoff, u8 const * const restrict input_block)
 {
-    u8 const * const restrict vp = (u8 *)v;
-
     memcpy(v, RO_IV, 128);
 
     blake2b(v, m);
 
-    ui p = 0;
+    u8 const * vp = (u8 *)v;
+    u8 const * const vl = &vp[128];
 
     for (ui i=0;i<128;i++)
     {
-        if (p == 128)
+        if (vp == vl)
         {
-            p = 0;
+            vp = (u8 *)v;
             blake2b(v, m);
         }
 
         u8 byte = 0;
 
-        for (u8 b=1;b;b<<=1)
+        for (u8 b=1;b;b<<=1,vp++)
         {
-            const u8 n = vp[p++];
-
-            if (n < cutoff)
+            if (*vp < cutoff)
             {
                 byte |= b;
             }

@@ -28,7 +28,8 @@ typedef   float                r32    ;   typedef   double       r64    ;
 //  7th cut is 9     (p0.03515625)
 //  8th cut is 8     (p0.03125000)
 //  9th cut is 7     (p0.02734375)
-// 10th cut is ???
+// 10th cut is 6     (p0.02343750)
+// 11th cut is ??
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
