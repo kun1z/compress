@@ -2,8 +2,8 @@
 // Copyright © 2021 by Brett Kuntz. All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
 #include "compress.h"
-#define CUTS_LENGTH 14
-static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, 6, 6, 5, 5, 5, -1 };
+#define CUTS_LENGTH 15
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, 6, 6, 5, 5, 5, 4, -1 };
 //----------------------------------------------------------------------------------------------------------------------
 //#include <windows.h>
 si main(si argc, s8 ** argv)
