@@ -32,9 +32,10 @@ typedef   float                r32    ;   typedef   double       r64    ;
 // 11th cut is 6     (p0.02343750)
 // 12th cut is 5
 // 13th cut is 5
-// 14th cut is 4 or 5 (we're going with 5 for now)
+// 14th cut is 5 (or 4, we're going with 5 for now)
 // 15th cut is 4
-// 16th cut is ??
+// 16th cut is 4
+// 17th cut is ???
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
