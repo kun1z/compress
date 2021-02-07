@@ -2,8 +2,8 @@
 // Copyright © 2021 by Brett Kuntz. All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
 #include "compress.h"
-#define CUTS_LENGTH 17
-static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, -1 };
+#define CUTS_LENGTH 21
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11, 9, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, -1 };
 //----------------------------------------------------------------------------------------------------------------------
 //#include <windows.h>
 si main(si argc, s8 ** argv)
@@ -62,7 +62,7 @@ si main(si argc, s8 ** argv)
 
     if (*global_total != 0) // fixes rare fork() emulation bug
     {
-        s8 buf[2048];
+        s8 buf[4096];
         const r64 avg_distance = (r64)*global_total / SAMPLES;
         sprintf(buf, "Test Params: ");
         for (ui i=0;i<CUTS_LENGTH;i++)
@@ -71,7 +71,7 @@ si main(si argc, s8 ** argv)
         }
         buf[strlen(buf) - 2] = 0;
         sprintf(&buf[strlen(buf)], "\nn=%lu\n", SAMPLES);
-        sprintf(&buf[strlen(buf)], "Average Distance: %.4f\n\n", avg_distance);
+        sprintf(&buf[strlen(buf)], "Average Distance: %.8f\n\n", avg_distance);
         FILE * fout = fopen("output_results.txt", "ab");
         fputs(buf, fout);
         fclose(fout);
@@ -85,6 +85,12 @@ si main(si argc, s8 ** argv)
 static void check(void)
 {
     FILE * frand = fopen("/dev/urandom", "rb");
+
+    if (!frand)
+    {
+        printf("/dev/urandom error\n");
+        exit(EXIT_FAILURE);
+    }
 
     u64 total = 0;
 
