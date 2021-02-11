@@ -40,7 +40,11 @@ typedef   float                r32    ;   typedef   double       r64    ;
 // 19th cut is 3
 // 20th cut is 3
 // 21st cut is 3
-// 22nd cut is ???
+// 22nd cut is 3
+// 23rd cut is 3
+// 24th cut is 3
+// 25th cut is 2
+// 26th cut is ??
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
