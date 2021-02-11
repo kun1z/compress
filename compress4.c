@@ -1,7 +1,9 @@
 //----------------------------------------------------------------------------------------------------------------------
 // Copyright © 2021 by Brett Kuntz. All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
-#include "compress3.h"
+#include "compress4.h"
+#define CUTS_LENGTH 5
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11 };
 //----------------------------------------------------------------------------------------------------------------------
 //#include <windows.h>
 si main(si argc, s8 ** argv)
@@ -23,14 +25,17 @@ si main(si argc, s8 ** argv)
         return EXIT_FAILURE;
     }
 
-    if (argc != 3)
+    /*if (argc != 3)
     {
         printf("param error\n");
         return EXIT_FAILURE;
     }
 
-    CUTOFF = atol(argv[1]);      // Old cutoff was around "160" : ((37 / 256) * 1024) + "small amount" to compensate for collisions
-    const ul SAMPLES = atol(argv[2]);
+    const ui CUTOFF = atol(argv[1]);
+    const ul SAMPLES = atol(argv[2]);*/
+
+    const ui CUTOFF = 36;
+    const ul SAMPLES = 10000;
 
     // Start
     printf("Starting\n");
@@ -64,8 +69,7 @@ si main(si argc, s8 ** argv)
     {
         s8 buf[4096];
         const r64 avg_distance = (r64)*global_total / SAMPLES;
-        sprintf(buf, "Test Params:\n");
-        sprintf(&buf[strlen(buf)], "CUTOFF: %u\n", CUTOFF);
+        sprintf(buf, "Test Params: 37, 23, 17, 14, 11, 9\n");
         sprintf(&buf[strlen(buf)], "n=%lu\n", SAMPLES);
         sprintf(&buf[strlen(buf)], "Average Distance: %.8f\n\n", avg_distance);
         FILE * fout = fopen("output_results.txt", "ab");
@@ -94,7 +98,7 @@ static void check(void)
 
     for (u64 i=0;i<SAMPLES_PER_TEST;i++)
     {
-        if (i && !(i & 63))
+        if (i & 1)
         {
             const r64 m = (tick() - start) / 60000.;
             const r64 pm = i / m;
@@ -111,13 +115,19 @@ static void check(void)
         {
             ui distance;
             u64 v[16], m[16];
-            const u64 sub_block = i * 32;
+            const u64 sub_block = i * 64;
 
             find_hash(0, output_block, input_block, v, m, input_iv, sub_block, 20);
 
+            for (ui j=0;j<CUTS_LENGTH;j++)
+            {
+                memcpy(input_block, output_block, 128);
+                find_p_hash(0, output_block, input_block, v, m, input_iv, sub_block + 1 + j, CHAIN_CUTS[j], 20);
+            }
+
             memcpy(input_block, output_block, 128);
 
-            find_p_hash2(&distance, output_block, input_block, v, m, input_iv, sub_block + 1, CUTOFF, 20);
+            find_p_hash(&distance, output_block, input_block, v, m, input_iv, CUTS_LENGTH + 1, 9, 20);
 
             total += distance;
         }
@@ -132,7 +142,7 @@ static void check(void)
     sem_post(&csoutput);
 }
 //----------------------------------------------------------------------------------------------------------------------
-static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui cutoff, const ui limit)
+static u64 find_p_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const u8 cutoff, const ui limit)
 {
     u64 best_n = 0;
     ui best_distance = 0;
@@ -151,7 +161,7 @@ static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output
     for (u64 n=0;n<total_n;n++)
     {
         u8 block[128];
-        p_hash2(block, RO_IV, v, m, cutoff, input_block);
+        p_hash(block, RO_IV, v, m, cutoff, input_block);
 
         const si distance = labs(get_hash_score(block));
 
@@ -174,7 +184,7 @@ static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output
         m[i] += BLAKE_IV * best_n;
     }
 
-    p_hash2(output_block, RO_IV, v, m, cutoff, input_block);
+    p_hash(output_block, RO_IV, v, m, cutoff, input_block);
 
     si temp_distance = get_hash_score(output_block);
 
@@ -203,43 +213,34 @@ static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-static void p_hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
+static void p_hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const u8 cutoff, u8 const * const restrict input_block)
 {
-    // DONT FORGET TO ALSO TEST NON-COLLIDING!!!
-    // DONT FORGET TO ALSO TEST NON-COLLIDING!!!
-    // DONT FORGET TO ALSO TEST NON-COLLIDING!!!
-
-    // Original hash score 250,000 samples: 108.2591 <= must beat this number, hopefully by a lot
-
     memcpy(v, RO_IV, 128);
 
     blake2b(v, m);
 
-    ui p = -1;
-    memset(block, 0, 128);
-
-    for (ui i=0;i<cutoff;i++)
-    {
-        if (++p == 64)
-        {
-            p = 0;
-            blake2b(v, m);
-        }
-
-        u16 word;
-        {
-            u8 const * const restrict vp = (u8 *)v;
-            memcpy(&word, &vp[p * 2], 2);
-        }
-
-        word &= 1023;
-
-        block[word / CHAR_BIT] |= (1 << (word % CHAR_BIT));
-    }
+    u8 const * vp = (u8 *)v;
+    u8 const * const vl = &vp[128];
 
     for (ui i=0;i<128;i++)
     {
-        block[i] ^= input_block[i];
+        if (vp == vl)
+        {
+            vp = (u8 *)v;
+            blake2b(v, m);
+        }
+
+        u8 byte = 0;
+
+        for (u8 b=1;b;b<<=1,vp++)
+        {
+            if (*vp < cutoff)
+            {
+                byte |= b;
+            }
+        }
+
+        block[i] = byte ^ input_block[i];
     }
 }
 //----------------------------------------------------------------------------------------------------------------------

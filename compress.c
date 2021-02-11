@@ -25,7 +25,11 @@ si main(si argc, s8 ** argv)
         return EXIT_FAILURE;
     }
 
-    if (argc != 3) return EXIT_FAILURE;
+    if (argc != 3)
+    {
+        printf("param error\n");
+        return EXIT_FAILURE;
+    }
 
     const ui CUTOFF = atol(argv[1]);
     const ul SAMPLES = atol(argv[2]);
