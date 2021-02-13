@@ -2,8 +2,6 @@
 // Copyright © 2021 by Brett Kuntz. All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
 #include "compress4.h"
-#define CUTS_LENGTH 5
-static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11 };
 //----------------------------------------------------------------------------------------------------------------------
 //#include <windows.h>
 si main(si argc, s8 ** argv)
@@ -31,8 +29,11 @@ si main(si argc, s8 ** argv)
         return EXIT_FAILURE;
     }
 
-    const ui CUTOFF = atol(argv[1]);
+    CUTOFF = atol(argv[1]);
     const ul SAMPLES = atol(argv[2]);
+
+    //CUTOFF = 9;
+    //const ul SAMPLES = 100000;
 
     // Start
     printf("Starting\n");
@@ -86,6 +87,12 @@ static void check(void)
     if (!frand)
     {
         printf("/dev/urandom error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!CUTOFF || CUTOFF > 100)
+    {
+        printf("CUTOFF error\n");
         exit(EXIT_FAILURE);
     }
 

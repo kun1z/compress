@@ -35,7 +35,8 @@ typedef   float                r32    ;   typedef   double       r64    ;
 #include <sys/wait.h>
 #include <sys/mman.h>
 //----------------------------------------------------------------------------------------------------------------------
-static ui CUTOFF;
+#define CUTS_LENGTH 5
+static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11 }, CUTOFF;
 static u64 * global_total, SAMPLES_PER_TEST;
 static sem_t csoutput;
 static const u64 BLAKE_IV = UINT64_C(0xA54FF53A5F1D36F1);
