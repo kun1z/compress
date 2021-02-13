@@ -35,6 +35,7 @@ typedef   float                r32    ;   typedef   double       r64    ;
 #include <sys/wait.h>
 #include <sys/mman.h>
 //----------------------------------------------------------------------------------------------------------------------
+static ui CUTOFF;
 static u64 * global_total, SAMPLES_PER_TEST;
 static sem_t csoutput;
 static const u64 BLAKE_IV = UINT64_C(0xA54FF53A5F1D36F1);
@@ -42,8 +43,10 @@ static const u64 BLAKE_IV = UINT64_C(0xA54FF53A5F1D36F1);
 static void check(void);
 static u64 find_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
 static u64 find_p_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const u8, const ui);
+static u64 find_p_hash2(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui, const ui);
 static void hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, u8 const * const restrict);
 static void p_hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const u8, u8 const * const restrict);
+static void p_hash2(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const ui, u8 const * const restrict);
 static si get_hash_score(void const * const);
 static void blake2b(u64 * const restrict, u64 const * const restrict);
 static u64 tick(void);
