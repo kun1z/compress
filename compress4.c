@@ -5,13 +5,13 @@
 #define CUTS_LENGTH 5
 static ui CHAIN_CUTS[CUTS_LENGTH] = { 37, 23, 17, 14, 11 };
 //----------------------------------------------------------------------------------------------------------------------
-#include <windows.h>
+//#include <windows.h>
 si main(si argc, s8 ** argv)
 {
-    if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS))
+    /*if (SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS))
     {
         printf("Low priority set\n");
-    }
+    }*/
 
     if (sem_init(&csoutput, 1, 1) == -1)
     {
@@ -124,8 +124,8 @@ static void check(void)
 
             memcpy(input_block, output_block, 128);
 
-            find_p_hash(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
-            //find_p_hash2(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
+            //find_p_hash(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
+            find_p_hash2(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
 
             total += distance;
         }

@@ -119,7 +119,7 @@ static void check(void)
         {
             ui distance;
             u64 v[16], m[16];
-            const u64 sub_block = i * 32;
+            const u64 sub_block = i * 64;
 
             find_hash(0, output_block, input_block, v, m, input_iv, sub_block, 20);
 
