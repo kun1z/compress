@@ -40,8 +40,8 @@ si main(si argc, s8 ** argv)
         return EXIT_FAILURE;
     }
 
-    CUTOFF = 36 + atol(argv[1]);
-    const ul SAMPLES = 25000;*/
+    CUTOFF = 33 + atol(argv[1]);
+    const ul SAMPLES = 75000;*/
 
     // Start
     printf("Starting\n");
@@ -111,7 +111,7 @@ static void check(void)
         sprintf(&buf[strlen(buf)], "%u, ", CHAIN_CUTS[j]);
     }
     buf[strlen(buf) - 2] = 0;
-    sprintf(&buf[strlen(buf)], "), find_p_hash3(%u)", CUTOFF);
+    sprintf(&buf[strlen(buf)], "), find_p_hash(%u)", CUTOFF);
     puts(buf);
 
     u64 total = 0;
@@ -120,7 +120,7 @@ static void check(void)
 
     for (u64 i=0;i<SAMPLES_PER_TEST;i++)
     {
-        if ((i & 3) == 1)
+        if ((i & 7) == 1)
         {
             const r64 m = (tick() - start) / 60000.;
             const r64 pm = i / m;
@@ -311,25 +311,24 @@ static u64 find_p_hash3(ui * const restrict distance, u8 * const restrict output
 static void p_hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
 {
     memcpy(v, RO_IV, 128);
+    memset(block, 0, 128);
 
     blake2b(v, m);
 
-    ui p = -1;
-    memset(block, 0, 128);
+    u8 const * vp = (u8 *)v;
+    u8 const * const vl = &vp[128];
+    vp -= 2;
 
     for (ui i=0;i<cutoff;i++)
     {
-        if (++p == 64)
+        if ((vp += 2) == vl)
         {
-            p = 0;
+            vp = (u8 *)v;
             blake2b(v, m);
         }
 
         u16 word;
-        {
-            u8 const * const restrict vp = (u8 *)v;
-            memcpy(&word, &vp[p * 2], 2);
-        }
+        memcpy(&word, vp, 2);
 
         const ui random_offset = word & 127;
         const ui random_bit = 1 << ((word >> 7) & 7);
@@ -346,11 +345,13 @@ static void p_hash2(u8 * const restrict block, u64 const * const restrict RO_IV,
 static void p_hash3(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
 {
     memcpy(v, RO_IV, 128);
+    memset(block, 0, 128);
 
     blake2b(v, m);
 
-    ui p = -1;
-    memset(block, 0, 128);
+    u8 const * vp = (u8 *)v;
+    u8 const * const vl = &vp[128];
+    vp -= 2;
 
     for (ui i=0;i<cutoff;i++)
     {
@@ -358,17 +359,14 @@ static void p_hash3(u8 * const restrict block, u64 const * const restrict RO_IV,
 
         do
         {
-            if (++p == 64)
+            if ((vp += 2) == vl)
             {
-                p = 0;
+                vp = (u8 *)v;
                 blake2b(v, m);
             }
 
             u16 word;
-            {
-                u8 const * const restrict vp = (u8 *)v;
-                memcpy(&word, &vp[p * 2], 2);
-            }
+            memcpy(&word, vp, 2);
 
             random_offset = word & 127;
             random_bit = 1 << ((word >> 7) & 7);
