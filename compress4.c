@@ -120,7 +120,7 @@ static void check(void)
 
     for (u64 i=0;i<SAMPLES_PER_TEST;i++)
     {
-        if ((i & 7) == 1)
+        if ((i & 3) == 1)
         {
             const r64 m = (tick() - start) / 60000.;
             const r64 pm = i / m;
@@ -166,7 +166,7 @@ static void check(void)
     sem_post(&csoutput);
 }
 //----------------------------------------------------------------------------------------------------------------------
-static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui cutoff, const ui limit)
+static u64 find_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui limit)
 {
     u64 best_n = 0;
     ui best_distance = 0;
@@ -185,7 +185,7 @@ static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output
     for (u64 n=0;n<total_n;n++)
     {
         u8 block[128];
-        p_hash2(block, RO_IV, v, m, cutoff, input_block);
+        hash(block, RO_IV, v, m, input_block);
 
         const si dist = labs(get_hash_score(block));
 
@@ -208,7 +208,7 @@ static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output
         m[i] += BLAKE_IV * best_n;
     }
 
-    p_hash2(output_block, RO_IV, v, m, cutoff, input_block);
+    hash(output_block, RO_IV, v, m, input_block);
 
     si temp_distance = get_hash_score(output_block);
 
@@ -237,148 +237,17 @@ static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-static u64 find_p_hash3(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui cutoff, const ui limit)
+static void hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, u8 const * const restrict input_block)
 {
-    u64 best_n = 0;
-    ui best_distance = 0;
-    const u64 total_n = (u64)1 << (limit - 1);
+    u8 const * const restrict vp = (u8 *)v;
 
-    u64 RO_IV[16];
-    memcpy(RO_IV, input_iv, 128);
-
-    for (ui i=0;i<16;i++)
-    {
-        RO_IV[i] += BLAKE_IV * block_n;
-    }
-
-    memcpy(m, input_iv, 128);
-
-    for (u64 n=0;n<total_n;n++)
-    {
-        u8 block[128];
-        p_hash3(block, RO_IV, v, m, cutoff, input_block);
-
-        const si dist = labs(get_hash_score(block));
-
-        if (dist > best_distance)
-        {
-            best_n = n;
-            best_distance = dist;
-        }
-
-        for (ui i=0;i<16;i++)
-        {
-            m[i] += BLAKE_IV;
-        }
-    }
-
-    memcpy(m, input_iv, 128);
-
-    for (ui i=0;i<16;i++)
-    {
-        m[i] += BLAKE_IV * best_n;
-    }
-
-    p_hash3(output_block, RO_IV, v, m, cutoff, input_block);
-
-    si temp_distance = get_hash_score(output_block);
-
-    if (temp_distance < 0)
-    {
-        for (ui i=0;i<128;i++)
-        {
-            output_block[i] = ~output_block[i];
-        }
-
-        temp_distance = -temp_distance;
-    }
-
-    if (temp_distance != best_distance)
-    {
-        printf("ERROR: temp_distance [%d] != best_distance [%u]\nHash confirmation failed!!\n", temp_distance, best_distance);
-        fflush(0);
-        exit(EXIT_FAILURE);
-    }
-
-    if (distance)
-    {
-        *distance = temp_distance;
-    }
-
-    return best_n;
-}
-//----------------------------------------------------------------------------------------------------------------------
-static void p_hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
-{
     memcpy(v, RO_IV, 128);
-    memset(block, 0, 128);
 
     blake2b(v, m);
 
-    u8 const * vp = (u8 *)v;
-    u8 const * const vl = &vp[128];
-    vp -= 2;
-
-    for (ui i=0;i<cutoff;i++)
-    {
-        if ((vp += 2) == vl)
-        {
-            vp = (u8 *)v;
-            blake2b(v, m);
-        }
-
-        u16 word;
-        memcpy(&word, vp, 2);
-
-        const ui random_offset = word & 127;
-        const ui random_bit = 1 << ((word >> 7) & 7);
-
-        block[random_offset] |= random_bit;
-    }
-
     for (ui i=0;i<128;i++)
     {
-        block[i] ^= input_block[i];
-    }
-}
-//----------------------------------------------------------------------------------------------------------------------
-static void p_hash3(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
-{
-    memcpy(v, RO_IV, 128);
-    memset(block, 0, 128);
-
-    blake2b(v, m);
-
-    u8 const * vp = (u8 *)v;
-    u8 const * const vl = &vp[128];
-    vp -= 2;
-
-    for (ui i=0;i<cutoff;i++)
-    {
-        u8 random_offset, random_bit;
-
-        do
-        {
-            if ((vp += 2) == vl)
-            {
-                vp = (u8 *)v;
-                blake2b(v, m);
-            }
-
-            u16 word;
-            memcpy(&word, vp, 2);
-
-            random_offset = word & 127;
-            random_bit = 1 << ((word >> 7) & 7);
-        }
-        while (block[random_offset] & random_bit);
-
-        block[random_offset] |= random_bit;
-    }
-
-    for (ui i=0;i<128;i++)
-    {
-        block[i] ^= input_block[i];
+        block[i] = vp[i] ^ input_block[i];
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -484,7 +353,7 @@ static void p_hash(u8 * const restrict block, u64 const * const restrict RO_IV, 
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
-static u64 find_hash(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui limit)
+static u64 find_p_hash2(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui cutoff, const ui limit)
 {
     u64 best_n = 0;
     ui best_distance = 0;
@@ -503,7 +372,7 @@ static u64 find_hash(ui * const restrict distance, u8 * const restrict output_bl
     for (u64 n=0;n<total_n;n++)
     {
         u8 block[128];
-        hash(block, RO_IV, v, m, input_block);
+        p_hash2(block, RO_IV, v, m, cutoff, input_block);
 
         const si dist = labs(get_hash_score(block));
 
@@ -526,7 +395,7 @@ static u64 find_hash(ui * const restrict distance, u8 * const restrict output_bl
         m[i] += BLAKE_IV * best_n;
     }
 
-    hash(output_block, RO_IV, v, m, input_block);
+    p_hash2(output_block, RO_IV, v, m, cutoff, input_block);
 
     si temp_distance = get_hash_score(output_block);
 
@@ -555,17 +424,148 @@ static u64 find_hash(ui * const restrict distance, u8 * const restrict output_bl
     return best_n;
 }
 //----------------------------------------------------------------------------------------------------------------------
-static void hash(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, u8 const * const restrict input_block)
+static void p_hash2(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
 {
-    u8 const * const restrict vp = (u8 *)v;
-
     memcpy(v, RO_IV, 128);
+    memset(block, 0, 128);
 
     blake2b(v, m);
 
+    u8 const * vp = (u8 *)v;
+    u8 const * const vl = &vp[128];
+    vp -= 2;
+
+    for (ui i=0;i<cutoff;i++)
+    {
+        if ((vp += 2) == vl)
+        {
+            vp = (u8 *)v;
+            blake2b(v, m);
+        }
+
+        u16 word;
+        memcpy(&word, vp, 2);
+
+        const ui random_offset = word & 127;
+        const ui random_bit = 1 << ((word >> 7) & 7);
+
+        block[random_offset] |= random_bit;
+    }
+
     for (ui i=0;i<128;i++)
     {
-        block[i] = vp[i] ^ input_block[i];
+        block[i] ^= input_block[i];
+    }
+}
+//----------------------------------------------------------------------------------------------------------------------
+static u64 find_p_hash3(ui * const restrict distance, u8 * const restrict output_block, u8 const * const restrict input_block, u64 * const restrict v, u64 * const restrict m, u8 const * const restrict input_iv, const u64 block_n, const ui cutoff, const ui limit)
+{
+    u64 best_n = 0;
+    ui best_distance = 0;
+    const u64 total_n = (u64)1 << (limit - 1);
+
+    u64 RO_IV[16];
+    memcpy(RO_IV, input_iv, 128);
+
+    for (ui i=0;i<16;i++)
+    {
+        RO_IV[i] += BLAKE_IV * block_n;
+    }
+
+    memcpy(m, input_iv, 128);
+
+    for (u64 n=0;n<total_n;n++)
+    {
+        u8 block[128];
+        p_hash3(block, RO_IV, v, m, cutoff, input_block);
+
+        const si dist = labs(get_hash_score(block));
+
+        if (dist > best_distance)
+        {
+            best_n = n;
+            best_distance = dist;
+        }
+
+        for (ui i=0;i<16;i++)
+        {
+            m[i] += BLAKE_IV;
+        }
+    }
+
+    memcpy(m, input_iv, 128);
+
+    for (ui i=0;i<16;i++)
+    {
+        m[i] += BLAKE_IV * best_n;
+    }
+
+    p_hash3(output_block, RO_IV, v, m, cutoff, input_block);
+
+    si temp_distance = get_hash_score(output_block);
+
+    if (temp_distance < 0)
+    {
+        for (ui i=0;i<128;i++)
+        {
+            output_block[i] = ~output_block[i];
+        }
+
+        temp_distance = -temp_distance;
+    }
+
+    if (temp_distance != best_distance)
+    {
+        printf("ERROR: temp_distance [%d] != best_distance [%u]\nHash confirmation failed!!\n", temp_distance, best_distance);
+        fflush(0);
+        exit(EXIT_FAILURE);
+    }
+
+    if (distance)
+    {
+        *distance = temp_distance;
+    }
+
+    return best_n;
+}
+//----------------------------------------------------------------------------------------------------------------------
+static void p_hash3(u8 * const restrict block, u64 const * const restrict RO_IV, u64 * const v, u64 const * const restrict m, const ui cutoff, u8 const * const restrict input_block)
+{
+    memcpy(v, RO_IV, 128);
+    memset(block, 0, 128);
+
+    blake2b(v, m);
+
+    u8 const * vp = (u8 *)v;
+    u8 const * const vl = &vp[128];
+    vp -= 2;
+
+    for (ui i=0;i<cutoff;i++)
+    {
+        u8 random_offset, random_bit;
+
+        do
+        {
+            if ((vp += 2) == vl)
+            {
+                vp = (u8 *)v;
+                blake2b(v, m);
+            }
+
+            u16 word;
+            memcpy(&word, vp, 2);
+
+            random_offset = word & 127;
+            random_bit = 1 << ((word >> 7) & 7);
+        }
+        while (block[random_offset] & random_bit);
+
+        block[random_offset] |= random_bit;
+    }
+
+    for (ui i=0;i<128;i++)
+    {
+        block[i] ^= input_block[i];
     }
 }
 //----------------------------------------------------------------------------------------------------------------------

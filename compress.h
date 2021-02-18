@@ -66,22 +66,46 @@ static const u64 BLAKE_IV = UINT64_C(0xA54FF53A5F1D36F1);
 //----------------------------------------------------------------------------------------------------------------------
 static void check(void);
 static u64 find_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
-static u64 find_hash2(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const r64, const r64, const ui);
 static u64 find_p_hash(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const u8, const ui);
-static u64 find_shuffle(u32 * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
+static u64 find_p_hash2(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui, const ui);
+static u64 find_p_hash3(ui * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui, const ui);
 static void hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, u8 const * const restrict);
-static void hash2(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const r64, const r64, u8 const * const restrict);
 static void p_hash(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const u8, u8 const * const restrict);
-static void shuffle(u8 * const restrict, u64 const * const restrict, u64 * const restrict, u64 const * const restrict, u8 const * const restrict);
+static void p_hash2(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const ui, u8 const * const restrict);
+static void p_hash3(u8 * const restrict, u64 const * const restrict, u64 * const, u64 const * const restrict, const ui, u8 const * const restrict);
 static si get_hash_score(void const * const);
 static void blake2b(u64 * const restrict, u64 const * const restrict);
 static u64 tick(void);
-static void set_bit(void * const restrict, const ui, const ui);
-static ui get_bit(void const * const restrict, const ui);
-static u16 rng_word(u64 * const, u64 const * const restrict, ui * const restrict);
 static u16 rng(u64 * const restrict, u64 const * const restrict, const u16, ui * const restrict);
-static s32 get_shuffle_score(void const * const restrict);
+static u16 rng_word(u64 * const, u64 const * const restrict, ui * const restrict);
+static ui get_bit(void const * const restrict, const ui);
+static void set_bit(void * const restrict, const ui, const ui);
 static void print_bytes(s8 const * const restrict, void const * const, const ui);
 static void print_population(s8 const * const restrict, void const * const);
 static void gen_test_file(s8 const * const restrict, const r64);
+static void shuffle(u8 * const restrict, u64 const * const restrict, u64 * const restrict, u64 const * const restrict, u8 const * const restrict);
+static u64 find_shuffle(u32 * const restrict, u8 * const restrict, u8 const * const restrict, u64 * const restrict, u64 * const restrict, u8 const * const restrict, const u64, const ui);
+static s32 get_shuffle_score(void const * const restrict);
 //----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
