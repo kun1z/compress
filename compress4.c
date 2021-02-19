@@ -32,17 +32,6 @@ si main(si argc, s8 ** argv)
     CUTOFF = atol(argv[1]);
     const ul SAMPLES = atol(argv[2]);
 
-    /*if (argc != 2)
-    {
-        printf("param error\n");
-        fflush(0);
-        sleep(1);
-        return EXIT_FAILURE;
-    }
-
-    CUTOFF = 33 + atol(argv[1]);
-    const ul SAMPLES = 75000;*/
-
     // Start
     printf("Starting\n");
 
@@ -75,7 +64,7 @@ si main(si argc, s8 ** argv)
     {
         s8 buf[4096];
         const r64 avg_distance = (r64)*global_total / SAMPLES;
-        sprintf(buf, "Test Params Hash3: 37, 23, 17, 14, 11, (TEST: %u)\n", CUTOFF);
+        sprintf(buf, "HASH2 Test Params: 37, 23, 17, 14, 11, 9, 8, 7, 6, 6, 5, 5, 5, 4, 4, 4, (TEST: %u)\n", CUTOFF);
         sprintf(&buf[strlen(buf)], "n=%lu\n", SAMPLES);
         sprintf(&buf[strlen(buf)], "Average Distance: %.8f\n\n", avg_distance);
         FILE * fout = fopen("output_results.txt", "ab");
@@ -111,7 +100,7 @@ static void check(void)
         sprintf(&buf[strlen(buf)], "%u, ", CHAIN_CUTS[j]);
     }
     buf[strlen(buf) - 2] = 0;
-    sprintf(&buf[strlen(buf)], "), find_p_hash(%u)", CUTOFF);
+    sprintf(&buf[strlen(buf)], "), find_p_hash2(%u)", CUTOFF);
     puts(buf);
 
     u64 total = 0;
@@ -150,8 +139,8 @@ static void check(void)
             memcpy(input_block, output_block, 128);
 
             //find_p_hash(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
-            //find_p_hash2(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
-            find_p_hash3(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
+            find_p_hash2(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
+            //find_p_hash3(&distance, output_block, input_block, v, m, input_iv, sub_block + CUTS_LENGTH + 1, CUTOFF, 20);
 
             total += distance;
         }
